@@ -94,7 +94,7 @@ object EffectEngine {
             is Effect.GainMoves -> { player.movesLeft += e.amount; log += "+${e.amount} moves" }
             is Effect.ApplyEnemyStatus -> {
                 val targets = if (e.all) enemies.filter { it.alive }
-                              else listOfNotNull(enemies.getOrNull(if (targetedEnemy >= 0) targetedEnemy else 0).takeIf { it.alive })
+                              else listOfNotNull(enemies.getOrNull(if (targetedEnemy >= 0) targetedEnemy else 0)?.takeIf { it.alive })
                 for (t in targets) t.addStatus(e.kind, 1, e.value, e.turns)
                 log += "${e.kind.name.lowercase()} applied"
             }

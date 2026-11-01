@@ -26,7 +26,7 @@ class CombatEngine(
     enum class Phase { PLAYER_TURN, ENEMY_TURN, WON, LOST }
 
     var phase: Phase = Phase.PLAYER_TURN
-        private set
+        internal set
 
     /** Accumulated visual/log events since last frame; screens drain this. */
     val combatLog: MutableList<String> = ArrayList()
@@ -71,10 +71,12 @@ class CombatEngine(
         if (hasHook("regen")) player.heal(1)
         if (hasHook("scrip_interest")) { player.coins += 2; player.takeDamage(1) }
         // tick spell cooldowns
-        val cdIt = player.cooldowns.entries.iterator()
+        val cdIt = player.cooldowns.keys.iterator()
         while (cdIt.hasNext()) {
-            val e = cdIt.next(); e.value -= if (hasHook("cooldown_double") && rng.nextInt(100) < 30) 2 else 1
-            if (e.value <= 0) cdIt.remove()
+            val key = cdIt.next()
+            val dec = if (hasHook("cooldown_double") && rng.nextInt(100) < 30) 2 else 1
+            val left = player.cooldowns[key]!! - dec
+            if (left <= 0) cdIt.remove() else player.cooldowns[key] = left
         }
         combatLog += "— turn ${player.turnCount} —"
     }
@@ -495,8 +497,6 @@ class CombatEngine(
             g
         }
 
-    companion object { const val MAX_ENEMIES = 5 }
-
     // ---------------------------------------------------------------- save/load
 
     fun saveState(): CombatSave = CombatSave(
@@ -511,19 +511,39 @@ class CombatEngine(
 
     data class CombatSave(val phase: String, val player: String, val board: String, val enemies: String, val counters: String)
 
-    companionobjectLoader@ SuppressWarnings("")
+    /** Re-entry points used by the save loader. */
+    internal fun restorePhase(name: String) {
+        phase = runCatching { Phase.valueOf(name) }.getOrElse { Phase.PLAYER_TURN }
+    }
+
+    internal fun restoreCounters(cf: List<Int>) {
+        sparkMatchCount = cf.getOrElse(0) { 0 }
+        crystalMatchCount = cf.getOrElse(1) { 0 }
+        columnShiftCount = cf.getOrElse(2) { 0 }
+        cheatDeathUsed = cf.getOrElse(3) { 0 } != 0
+        panicUsed = cf.getOrElse(4) { 0 } != 0
+        firstHeartUsed = cf.getOrElse(5) { 0 } != 0
+        firstMatchDone = cf.getOrElse(6) { 0 } != 0
+        itemFreeChargeUsed = cf.getOrElse(7) { 0 } != 0
+        freeConvertUsed = cf.getOrElse(8) { 0 } != 0
+        targetedEnemyIndex = cf.getOrElse(9) { -1 }
+    }
+
+    companion object { const val MAX_ENEMIES = 5 }
 }
 
-/** Rehydrates a CombatEngine from saved strings. Returns null on corrupt data. */
-fun loadCombat(save: CombatEngine.CombatSave, rng: SeededRng): CombatEngine? {
+/** Rehydrates a CombatEngine from saved strings. Returns null on corrupt data.
+ *  If [sharedPlayer] is given it is used instead of the deserialized copy so the run
+ *  and the combat keep pointing at one player instance. */
+fun loadCombat(save: CombatEngine.CombatSave, rng: SeededRng, sharedPlayer: PlayerState? = null): CombatEngine? {
     return try {
-        val player = PlayerState.loadFromString(save.player)
+        val player = sharedPlayer ?: PlayerState.loadFromString(save.player)
         val board = PuzzleBoard.deserialize(save.board, rng)
         val enemies = if (save.enemies.isBlank()) mutableListOf()
                       else save.enemies.split("~").mapNotNull { EnemyInstance.loadFromString(it) }.toMutableList()
         val engine = CombatEngine(player, board, enemies, rng)
-        engine.phaseRestore(save.phase)
-        val cf = save.counters.split(",").map { it.toInt() }
+        engine.restorePhase(save.phase)
+        val cf = save.counters.split(",").mapNotNull { it.toIntOrNull() }
         engine.restoreCounters(cf)
         engine
     } catch (e: Exception) {

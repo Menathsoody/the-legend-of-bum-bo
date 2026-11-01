@@ -196,8 +196,9 @@ class PuzzleBoard(
             val groupId = overlapOwners.firstOrNull { merged[it].family == fam }
             if (groupId != null) {
                 val g = merged[groupId]
-                for (cell in run) if (!g.cells.contains(cell)) {
-                    g.cells.add(cell); cellOwner[cell] = groupId
+                val cells = g.cells as MutableList
+                for (cell in run) if (!cells.contains(cell)) {
+                    cells.add(cell); cellOwner[cell] = groupId
                 }
             } else {
                 val newIdx = merged.size
@@ -248,14 +249,14 @@ class PuzzleBoard(
         val adj = neighborsOf(cellsToClear)
 
         // hearts that happen to sit adjacent to cleared cells also pop (heal)
-        val hearts = adj.filter { grid[it.first]?.[it.second]?.type == TileType.HEART }
+        val hearts = adj.filter { grid[it.first][it.second]?.type == TileType.HEART }
             .filter { it !in cellsToClear }
 
         // curses adjacent to cleared cells are destroyed
-        val curses = adj.filter { grid[it.first]?.[it.second]?.type == TileType.CURSE }
+        val curses = adj.filter { grid[it.first][it.second]?.type == TileType.CURSE }
 
         // sealed tiles adjacent to cleared cells reveal their content
-        val revealed = adj.filter { grid[it.first]?.[it.second]?.sealed == true }
+        val revealed = adj.filter { grid[it.first][it.second]?.sealed == true }
 
         // apply removals
         val clearedList = ArrayList(cellsToClear) + hearts + curses

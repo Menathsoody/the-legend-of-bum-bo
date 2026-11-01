@@ -14,8 +14,10 @@ class PlayerState(
     var movesLeft: Int = def.baseMoves,
     var extraMovesNextTurn: Int = 0,
     var coins: Int = 0,
-    val mana: EnumMap<TileType, Int> = EnumMap(TileType::class.java).also {
-        for (t in TileType.BASE) it[t] = 0
+    val mana: java.util.EnumMap<TileType, Int> = run {
+        val m = java.util.EnumMap<TileType, Int>(TileType::class.java)
+        for (t in TileType.BASE) m[t] = 0
+        m
     },
     val statuses: MutableList<StatusEffect> = mutableListOf(),
     /** spell id -> remaining cooldown turns */
@@ -148,6 +150,3 @@ object CharacterCatalogueById {
     fun get(id: String): CharacterDef =
         com.papergrimoire.characters.CharacterCatalogue.byId(id)
 }
-
-/** Tiny enum-map alias kept for readability across combat code. */
-typealias EnumMap<K : java.lang.Enum<K>, V> = java.util.EnumMap<K, V>
