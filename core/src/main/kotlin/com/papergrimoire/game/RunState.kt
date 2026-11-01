@@ -390,7 +390,7 @@ class RunState(
     }
 
     fun generateEvent() {
-        val r = SeededRng((seed xor currentRoomId * 1009L xor floorNumber) and Long.MAX_VALUE)
+        val r = SeededRng((seed xor (currentRoomId.toLong() * 1009L) xor floorNumber.toLong()) and Long.MAX_VALUE)
         val ev = r.pick(events)
         eventId = ev.id
         eventPrompt = ev.prompt
