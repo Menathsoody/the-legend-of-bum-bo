@@ -15,6 +15,7 @@ import com.papergrimoire.save.Settings
 class AudioEngine {
     private var sounds: MutableMap<String, Sound> = mutableMapOf()
     private var musicLoop: Sound? = null
+    private var musicId = -1L
     private val random = RandomXS128(0xA0D10L)
 
     var settings = Settings()
@@ -57,20 +58,20 @@ class AudioEngine {
         stopMusic()
         if (settings.muted) return
         musicLoop?.let {
-            it.loop(settings.musicVolume * 0.45f)
+            musicId = it.loop(settings.musicVolume * 0.45f)
             musicPlaying = true
         }
     }
 
     fun stopMusic() {
-        if (musicPlaying) { runCatching { musicLoop?.stop() }; musicPlaying = false }
+        if (musicPlaying) { runCatching { if (musicId >= 0) musicLoop?.stop(musicId) else musicLoop?.stop() }; musicPlaying = false; musicId = -1L }
     }
 
     /** Call each frame to keep volume in sync with settings. */
     fun update(dt: Float) {
         musicElapsed += dt
-        if (musicPlaying) {
-            runCatching { musicLoop?.setVolume(0f, settings.musicVolume * 0.45f) }
+        if (musicPlaying && musicId >= 0) {
+            runCatching { musicLoop?.setVolume(musicId, settings.musicVolume * 0.45f) }
         }
     }
 

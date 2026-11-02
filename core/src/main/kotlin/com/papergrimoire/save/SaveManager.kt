@@ -64,18 +64,21 @@ class SaveManager {
         if (!prop.isNullOrBlank()) Gdx.files.absolute(prop)
         else runCatching { Gdx.files.external("papergrimoire") }
             .getOrElse { Gdx.files.local("saves") }
-    }.also { if (!it.exists()) it.mkdirs() }
+    }.also { d -> runCatching { if (!d.exists()) d.mkdirs() } }
 
     private fun file(name: String) = dir.child(name)
 
     private fun atomicWrite(name: String, data: String): Boolean {
         return try {
-            val tmp = file("$name.tmp")
+            val target = file(name)
+            val tmp = target.sibling("$name.tmp")
             tmp.writeString(data, false)
             val check = tmp.readString()
             if (check.length != data.length) { tmp.delete(); return false }
-            val ok = tmp.renameTo(file(name)) || run { file(name).writeString(data, false); tmp.delete(); true }
-            ok
+            // LibGDX FileHandle has no renameTo: write verified copy to the real file, then drop temp.
+            target.writeString(check, false)
+            tmp.delete()
+            target.exists()
         } catch (e: Exception) {
             false
         }

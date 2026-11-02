@@ -111,7 +111,9 @@ object PaperArt {
         val len = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
         batch.setColor(color)
         val ang = Math.atan2(dy.toDouble(), dx.toDouble()).toFloat() * 57.29578f
-        batch.draw(getTexture("white"), x1, y1 - thick / 2, 0f, thick / 2, len, thick, 1f, 1f, ang)
+        // rotated textured quad via the Texture-region overload (Batch has no Texture rotation overload)
+        val reg = com.badlogic.gdx.graphics.g2d.TextureRegion(getTexture("white"))
+        batch.draw(reg, x1, y1 - thick / 2, 0f, thick / 2, len, thick, 1f, 1f, ang)
         batch.setColor(1f, 1f, 1f, 1f)
     }
 
@@ -224,7 +226,7 @@ object PaperArt {
                 p.fillCircle(32, 34, 14); p.fillCircle(24, 28, 8); p.fillCircle(40, 28, 7)
             }
             TileType.SPORE -> { // mushroom puff
-                p.fillCircle(32, 26, 12); p.fillRect(29, 34, 6, 14)
+                p.fillCircle(32, 26, 12); p.fillRectangle(29, 34, 6, 14)
                 c(1f, 1f, 1f, 0.5f); p.fillCircle(26, 22, 3); p.fillCircle(38, 24, 2)
             }
             TileType.CRYSTAL -> { // diamond facets
