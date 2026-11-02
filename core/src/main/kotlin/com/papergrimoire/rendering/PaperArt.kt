@@ -316,4 +316,38 @@ object PaperArt {
         batch.draw(tex, x, y, w, hh)
         batch.setColor(1f, 1f, 1f, 1f)
     }
+
+    // ---- extended doodle helpers (used by screens & board renderer) --------
+
+    fun drawTileIcon(batch: Batch, type: TileType, x: Float, y: Float, size: Float) {
+        batch.draw(getTexture("tile_${type.name.lowercase()}"), x, y, size, size)
+    }
+
+    fun drawDoll(batch: Batch, id: String, x: Float, y: Float, size: Float, tint: Color? = null) {
+        if (tint != null) batch.setColor(tint)
+        batch.draw(getTexture("doll_$id"), x, y, size, size)
+        batch.setColor(1f, 1f, 1f, 1f)
+    }
+
+    /** Filled doodle circle (pencil blob). */
+    fun fillCircle(batch: Batch, cx: Float, cy: Float, r: Float, color: Color) {
+        ring(batch, cx, cy, r * 0.55f, color, thick = r)
+    }
+
+    /** Wobbly hand-drawn star for legendary items / crits. */
+    fun star(batch: Batch, cx: Float, cy: Float, r: Float, color: Color) {
+        for (i in 0 until 5) {
+            val a0 = (i * 2 % 5) / 5f * (Math.PI * 2).toFloat() - Math.PI.toFloat() / 2f
+            val a1 = (((i * 2 + 2) % 5)) / 5f * (Math.PI * 2).toFloat() - Math.PI.toFloat() / 2f
+            line(batch, cx + Math.cos(a0.toDouble()).toFloat() * r, cy + Math.sin(a0.toDouble()).toFloat() * r,
+                 cx + Math.cos(a1.toDouble()).toFloat() * r, cy + Math.sin(a1.toDouble()).toFloat() * r, 2f, color)
+        }
+    }
+
+    /** Health-bar style bar with pencil frame over paper backing. */
+    fun bar(batch: Batch, x: Float, y: Float, w: Float, hgt: Float, frac: Float, fillColor: Color, backColor: Color = PAPER_DARK) {
+        fillRect(batch, x, y, w, hgt, backColor)
+        fillRect(batch, x, y, w * frac.coerceIn(0f, 1f), hgt, fillColor)
+        frame(batch, x, y, w, hgt, INK)
+    }
 }

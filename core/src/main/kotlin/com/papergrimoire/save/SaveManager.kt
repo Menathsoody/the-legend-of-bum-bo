@@ -59,14 +59,21 @@ class Settings {
  * -write can never destroy the previous good save.
  */
 class SaveManager {
-    private val dir: FileHandle by lazy {
+    /** Base storage as a LibGDX FileHandle; works on Android (external/private) and desktop. */
+    private val baseDir: FileHandle by lazy {
         val prop = System.getProperty("papergrimoire.savedir")
-        if (!prop.isNullOrBlank()) Gdx.files.absolute(prop)
-        else runCatching { Gdx.files.external("papergrimoire") }
-            .getOrElse { Gdx.files.local("saves") }
-    }.also { d -> runCatching { if (!d.exists()) d.mkdirs() } }
+        val d: FileHandle = if (!prop.isNullOrBlank()) {
+            Gdx.files.absolute(prop)
+        } else {
+            runCatching { Gdx.files.external("papergrimoire") }
+                .getOrElse { Gdx.files.local("saves") }
+        }
+        // Ensure the physical directory exists (FileHandle has no mkdirs; use java.io.File).
+        runCatching { val f = d.file(); if (!f.exists()) f.mkdirs() }
+        d
+    }
 
-    private fun file(name: String) = dir.child(name)
+    private fun file(name: String): FileHandle = baseDir.child(name)
 
     private fun atomicWrite(name: String, data: String): Boolean {
         return try {
